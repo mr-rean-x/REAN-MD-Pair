@@ -22,15 +22,20 @@ Enter a WhatsApp number, get the 8-digit pairing code (`MRREANMD`, shows as
    WhatsApp → Linked devices → Link a device →
    "Link with phone number instead" → enter the code.
 
-## Honest limits
+## How pairing works (website <-> Railway bot)
 
-- Vercel free-tier functions are stateless: if the status poll hits a cold
-  instance, the session is gone and the page will say "Session expired" —
-  just press Generate again.
-- The pairing code expires in about 60 seconds. Type it fast.
-- The session this page creates is a bare Baileys connection. To run the
-  full REAN MD bot (all 600+ commands) on that number, pair the same number
-  with the Railway bot via Telegram `/pair` — that session is the real bot
-  session.
-- Use a secondary WhatsApp number. Unofficial bots carry a ban risk —
-  never pair your main number.
+The page asks the **Railway bot itself** for the pairing code, so a number
+paired on the website links to the real REAN MD bot — exactly like
+Jawad MD's site. No token is needed for pairing.
+
+1. The bot repo (`REAN-MD`) runs a tiny HTTP pair API (`pair-server.js`,
+   `POST /pair`) on Railway. It reuses the bot's own Telegram `/pair`
+   flow: same validation, same `MRREANMD` code, same session files.
+2. This project (`api/pair.js`) forwards code requests to that API.
+   Set the bot's public URL in `api/pair.js`:
+   `RAILWAY_PAIR_URL = 'https://<your-railway-domain>'`
+   (Railway dashboard → REAN-MD service → Settings → Networking →
+   Generate Domain — paste the domain it gives you, no trailing `/`).
+3. If `RAILWAY_PAIR_URL` is empty, the page falls back to generating the
+   code from its own temporary Baileys session on Vercel (the code then
+   pairs to that temporary session, not to the Railway bot).

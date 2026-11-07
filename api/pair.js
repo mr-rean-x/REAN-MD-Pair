@@ -2,19 +2,19 @@
 // POST /api/pair  { number }        -> { code, sessionId }
 // GET  /api/pair?sessionId=...     -> { paired, code, session? }
 //
-// Flow: creates a Baileys socket (in-memory auth in /tmp), requests the
-// pairing code 'MRREANMD' for the given number, returns the code. The
-// socket stays alive in this instance's memory for ~2 minutes so the user
-// can type the code in WhatsApp; the frontend polls the GET endpoint and,
-// once paired, receives the session credentials (base64) to save.
+// Two modes:
+// 1. RAILWAY_PAIR_URL is set: the code is requested from the Railway bot
+//    itself (its pair-server.js), so pairing on the website links the
+//    number to the real REAN MD bot — exactly like Jawad MD's site.
+//    No token is needed for pairing.
+// 2. RAILWAY_PAIR_URL is empty: falls back to a local Baileys socket here
+//    on Vercel (a bare connection — the code pairs to a temporary session,
+//    not to the Railway bot). Set the URL to use mode 1.
 //
-// Honest limits (Vercel free tier):
-// - Serverless instances are stateless: if the GET poll hits a cold/other
-//   instance, the session is gone and the frontend must generate again.
-// - The pairing code is valid for ~60 seconds — type it fast.
-// - The session this creates is a bare Baileys connection. To run the full
-//   REAN MD bot (all commands) on that number, pair it with the Railway
-//   bot via Telegram /pair — that session is the real bot session.
+// To use mode 1: Railway dashboard -> REAN-MD service -> Settings ->
+// Networking -> Generate Domain. Paste that domain below (no trailing /),
+// push to GitHub, Vercel redeploys and the website pairs into the bot.
+const RAILWAY_PAIR_URL = ''; // e.g. 'https://rean-md-production.up.railway.app'
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
@@ -79,6 +79,27 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Enter a valid WhatsApp number with country code (example: 8801956501630).' });
   }
 
+  // ---- Mode 1: ask the Railway bot for the code (pairs into the real bot) ----
+  if (RAILWAY_PAIR_URL) {
+    try {
+      const upstream = await fetch(RAILWAY_PAIR_URL.replace(/\/$/, '') + '/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const data = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({ error: data.error || 'Pair server error. Try again.' });
+      }
+      if (!data.code) throw new Error('Pair server returned no code.');
+      return res.status(200).json({ code: data.code, sessionId: null });
+    } catch (e) {
+      return res.status(502).json({ error: 'Pair server (Railway bot) is offline right now. Try again in a bit.' });
+    }
+  }
+
+  // ---- Mode 2: local Baileys socket on Vercel (temporary session) ----
   const id = crypto.randomBytes(8).toString('hex');
   try {
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir(id));
