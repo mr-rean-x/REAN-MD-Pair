@@ -1,0 +1,1 @@
+{"$schema":"https://schema.vercel.sh/vercel.json","functions":{"api/pair.js":{"maxDuration":60}}}
