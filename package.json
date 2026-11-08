@@ -1,1 +1,10 @@
-{"dependencies":{"@whiskeysockets/baileys":"^7.0.0","pino":"^9.0.0"},"description":"REAN MD WhatsApp pairing page for Vercel — enter a number, get a pairing code.","name":"rean-md-web-pair","private":true,"version":"1.0.0"}
+{
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc13",
+    "pino": "^9.0.0"
+  },
+  "description": "REAN MD WhatsApp pairing page for Vercel — enter a number, get a pairing code.",
+  "name": "rean-md-web-pair",
+  "private": true,
+  "version": "1.0.0"
+}
