@@ -14,7 +14,7 @@
 // To use mode 1: Railway dashboard -> REAN-MD service -> Settings ->
 // Networking -> Generate Domain. Paste that domain below (no trailing /),
 // push to GitHub, Vercel redeploys and the website pairs into the bot.
-const RAILWAY_PAIR_URL = ''; // e.g. 'https://rean-md-production.up.railway.app'
+const RAILWAY_PAIR_URL = 'https://rean-md-production.up.railway.app'; // Railway bot er domain (sudhu backend connection er jonno; website er address Vercel er tai thakbe)
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
